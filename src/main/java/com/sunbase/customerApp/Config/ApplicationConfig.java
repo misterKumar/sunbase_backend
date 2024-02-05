@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableWebSecurity
 public class ApplicationConfig {
     private final UserRepository repository;
 

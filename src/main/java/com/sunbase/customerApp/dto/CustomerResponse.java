@@ -17,4 +17,7 @@ public class CustomerResponse {
     private String state;
     private String email;
     private String phone;
+
+    public CustomerResponse(String firstName, String lastName, String street, String address, String city, String state, String email, String phone) {
+    }
 }

@@ -33,9 +33,8 @@ public class SecurityConfiguration{
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.disable())
                 .authorizeHttpRequests(auth -> auth
-
+                        .requestMatchers("/api/v1/sunbase/customer/**").authenticated()
                         .requestMatchers("/api/v1/sunbase/auth/**")
                         .permitAll()
                         .anyRequest()
@@ -45,8 +44,7 @@ public class SecurityConfiguration{
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-        ;
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

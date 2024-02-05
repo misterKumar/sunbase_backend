@@ -79,7 +79,8 @@ public class ApiSyncServiceImpl implements ApiSyncService {
             throw new RuntimeException("authentication failed.");
         }
     }
-    public String convertStringToJson(String token) throws JsonProcessingException {
+    //    convert string to
+    public String convertStringToJson(String token){
         JsonObject jsonObject = JsonParser.parseString(token).getAsJsonObject();
         // Access the value of access_token
         return jsonObject.get("access_token").getAsString();

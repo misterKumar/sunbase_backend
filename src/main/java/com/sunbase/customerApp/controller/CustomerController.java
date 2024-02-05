@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sunbase.customerApp.dto.CustomerRequest;
 import com.sunbase.customerApp.dto.CustomerResponse;
 import com.sunbase.customerApp.dto.SyncResponse;
+import com.sunbase.customerApp.entity.Customer;
 import com.sunbase.customerApp.service.ApiSyncService;
 import com.sunbase.customerApp.service.CustomerService;
 import lombok.RequiredArgsConstructor;
@@ -19,15 +20,14 @@ import java.util.UUID;
 /**
  * customer end-points
  */
+
 @RestController
 @RequestMapping("/api/v1/sunbase/customer")
 @RequiredArgsConstructor
 public class CustomerController {
 
     private final CustomerService customerService;
-    private final ApiSyncService apiSyncService;
-
-    //    create customer using CustomerRequest dto
+//    create customer using CustomerRequest dto
     @PostMapping("/add-customer")
     public ResponseEntity<String> createCustomer(
             @RequestBody CustomerRequest customerRequest
@@ -64,9 +64,14 @@ public class CustomerController {
     ){
         return new ResponseEntity<>(customerService.deleteCustomerById(uuid),HttpStatus.OK);
     }
-
+    //    sync customer from remote api
     @GetMapping("/sync-customer")
-    public ResponseEntity<List<Map<String,Object>> > syncCustomerData() throws JsonProcessingException {
-        return new ResponseEntity<>(apiSyncService.fetchCustomerData(),HttpStatus.OK);
+    public ResponseEntity<List<CustomerResponse>> syncedDataFromRemoteApi() throws JsonProcessingException{
+        return new ResponseEntity<>(customerService.syncedDataFromRemoteApi(),HttpStatus.OK);
+    }
+    //    search by search term in sorted order
+    @GetMapping("/search")
+    public ResponseEntity<List<CustomerResponse>> searchResult(@RequestParam("q") String searchTerm){
+        return new ResponseEntity<>(customerService.getCustomersBySearch(searchTerm),HttpStatus.OK);
     }
 }
