@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class CustomerResponse {
+    private String uuid;
     private String firstName;
     private String lastName;
     private String address;
@@ -18,6 +19,6 @@ public class CustomerResponse {
     private String email;
     private String phone;
 
-    public CustomerResponse(String firstName, String lastName, String street, String address, String city, String state, String email, String phone) {
+    public CustomerResponse(String uuid,String firstName, String lastName, String street, String address, String city, String state, String email, String phone) {
     }
 }

@@ -12,11 +12,12 @@ import java.util.UUID;
 public interface CustomerService {
     String addCustomer(CustomerRequest customerRequest);
     String editCustomer(String uuid,CustomerRequest customerRequest);
-    String findCustomerUUID(String email);
     CustomerResponse findCustomerById(String uuid);
 
-    List<CustomerResponse> getCustomersBySearch(String searchTerm);
+    List<CustomerResponse> getCustomersBySearch(String searchOption, String query);
 
     String deleteCustomerById(String uuid);
     List<CustomerResponse> syncedDataFromRemoteApi() throws JsonProcessingException;
+
+    List<CustomerResponse> getAllCustomers();
 }

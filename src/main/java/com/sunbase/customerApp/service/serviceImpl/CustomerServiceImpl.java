@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
@@ -48,20 +47,11 @@ public class CustomerServiceImpl implements CustomerService{
         customerRepository.save(customer);
         return "customer added successfully";
     }
+
     //    get customer by uuid
     private Customer getExistCustomer(String uuid){
         Optional<Customer> existingCustomer = customerRepository.findByUuid(uuid);
         return existingCustomer.orElse(null);
-    }
-    //    get uuid by customer email
-    @Override
-    public String findCustomerUUID(String email){
-        Optional<Customer> existingCustomer = customerRepository.findByEmail(email);
-        Customer customer = null;
-        if(existingCustomer.isPresent()){
-            customer = existingCustomer.get();
-        }
-        return customer != null ? customer.getUuid() : null;
     }
     //    update customer details
     @Override
@@ -89,6 +79,7 @@ public class CustomerServiceImpl implements CustomerService{
         CustomerResponse customerResponse = null;
         if (customer != null){
             customerResponse = CustomerResponse.builder()
+                    .uuid(customer.getUuid())
                     .firstName(customer.getFirstName())
                     .lastName(customer.getLastName())
                     .address(customer.getAddress())
@@ -135,6 +126,7 @@ public class CustomerServiceImpl implements CustomerService{
         updateCustomerTableWithRemoteData(syncResponses);
         //          fetch all the data from database;
         List<Customer> customers = customerRepository.findAll();
+        sortByName(customers);
         for (Customer c : customers){
             if (c.getUuid() != null && !c.getUuid().isEmpty()) {
                 CustomerResponse customerResponse = findCustomerById(c.getUuid());
@@ -143,11 +135,21 @@ public class CustomerServiceImpl implements CustomerService{
         }
         return customerResponses;
     }
+
+    @Override
+    public List<CustomerResponse> getAllCustomers() {
+        List<Customer> customers = customerRepository.findAll();
+//        sort customer
+        sortByName(customers);
+        return findCustomerResponse(customers);
+    }
+
     private void updateCustomerTableWithRemoteData(List<Object> syncResponse){
 //      check if customer exist in the database or not, if not exist insert a new record
 //        if present update it into our database
         for (Object key: syncResponse.stream().toList()) {
             SyncResponse c = (SyncResponse) key;
+//            customer Request
             CustomerRequest customerRequest = new CustomerRequest(
                     c.getFirstName(),
                     c.getLastName(),
@@ -158,20 +160,52 @@ public class CustomerServiceImpl implements CustomerService{
                     c.getEmail(),
                     c.getPhone()
             );
-            if(customerRepository.existsByUuid(c.getUuid())){
+//            Customer
+            Customer customer = Customer.builder()
+                    .uuid(c.getUuid())
+                    .firstName(c.getFirstName())
+                    .lastName(c.getLastName())
+                    .street(c.getStreet())
+                    .address(c.getAddress())
+                    .city(c.getCity())
+                    .state(c.getState())
+                    .email(c.getEmail())
+                    .phone(c.getPhone())
+                    .build();
+
+            System.out.println(c.getUuid());
+            if(!customerRepository.existsByUuid(c.getUuid())){
+                System.out.println(customerRequest.getFirstName());
+//                create new customer
+                addCustomer(customer);
+            }else{
 //                update with existing customer
                 editCustomer(c.getUuid(),customerRequest);
-            }else if(!customerRepository.existsByUuid(c.getUuid())){
-//                create new customer
-                addCustomer(customerRequest);
             }
         }
     }
-
+    //    add customer for remote api data
+    private void addCustomer(Customer customer){
+        customer = Customer.builder()
+                .uuid(customer.getUuid())
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .street(customer.getStreet())
+                .address(customer.getAddress())
+                .state(customer.getState())
+                .city(customer.getCity())
+                .phone(customer.getPhone())
+                .email(customer.getEmail())
+                .build();
+//        save customer in customer table
+        customerRepository.save(customer);
+    }
+    //    getting customer response
     private List<CustomerResponse> findCustomerResponse(List<Customer> customers){
         List<CustomerResponse> customerResponses = new ArrayList<>();
         for(Customer c : customers){
             CustomerResponse customerResponse = CustomerResponse.builder()
+                    .uuid(c.getUuid())
                     .firstName(c.getFirstName())
                     .lastName(c.getLastName())
                     .address(c.getAddress())
@@ -184,32 +218,33 @@ public class CustomerServiceImpl implements CustomerService{
         }
         return customerResponses;
     }
-    public List<CustomerResponse> getCustomersBySearch(String searchTerm){
+    //    search by search option and search query
+    public List<CustomerResponse> getCustomersBySearch(String searchOption, String query){
         List<Customer> customers = null;
         List<CustomerResponse> customerResponses = null;
-        if(searchTerm.equals("firstName")){
+        if(searchOption.equals("First Name")){
 //            search by first name
-            customers = customerRepository.findByFirstName(searchTerm).stream().toList();
+            customers = customerRepository.findByFirstName(query).stream().toList();
+            sortByName(customers);
             customerResponses = findCustomerResponse(customers);
-            sortByName();
 
-        } else if (searchTerm.equals("email")) {
+        } else if (searchOption.equals("Email")) {
 //            search by email
-            customers = customerRepository.findByEmail(searchTerm).stream().toList();
+            customers = customerRepository.findByEmail(query).stream().toList();
+            sortByName(customers);
             customerResponses = findCustomerResponse(customers);
-            sortByName();
 
-        } else if (searchTerm.equals("city")) {
+        } else if (searchOption.equals("City")) {
 //            search by city
-            customers = customerRepository.findByCity(searchTerm).stream().toList();
+            customers = customerRepository.findByCity(query).stream().toList();
+            sortByName(customers);
             customerResponses = findCustomerResponse(customers);
-            sortByName();
 
-        }else if(searchTerm.equals("phone")){
+        }else if(searchOption.equals("Phone")){
 //            search by phone
-            customers = customerRepository.findByPhone(searchTerm).stream().toList();
+            customers = customerRepository.findByPhone(query).stream().toList();
+            sortByName(customers);
             customerResponses = findCustomerResponse(customers);
-            sortByName();
         }else {
             throw new RuntimeException("search term not found");
         }
@@ -217,13 +252,10 @@ public class CustomerServiceImpl implements CustomerService{
         return customerResponses;
     }
     //    sort all customers by their first and last name
-    private void sortByName(){
+    private void sortByName(List<Customer> customers){
 
-        List<Customer> customers;
         try {
-            customers = customerRepository.findAll();
-            customers.sort((c1, c2) -> c1.getFirstName().toLowerCase().compareTo(c2.getLastName().toLowerCase()));
-
+            customers.sort((c1, c2) -> c1.getFirstName().toLowerCase().compareTo(c2.getFirstName().toLowerCase()));
         }catch (Exception e){
             throw new RuntimeException("Not found");
         }

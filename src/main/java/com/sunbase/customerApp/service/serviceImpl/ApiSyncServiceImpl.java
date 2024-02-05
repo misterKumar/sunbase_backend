@@ -32,6 +32,7 @@ public class ApiSyncServiceImpl implements ApiSyncService {
         // Authentication request
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type","application/json");
+//        hard coded login credential for external api call
         String loginId = "test@sunbasedata.com";
         String password = "Test@123";
         HttpEntity<String> request = new HttpEntity<>(
